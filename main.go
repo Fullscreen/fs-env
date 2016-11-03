@@ -35,7 +35,7 @@ Flags:
 	-v, --version 			Print the version number
 `
 
-var tableName = "appz"
+var tableName = "applications"
 
 var (
 	f = flag.NewFlagSet("flags", flag.ContinueOnError)
