@@ -25,11 +25,11 @@ const (
 )
 
 const helpString = `Usage:
-  fs-env [-hv] [--application=application] [--delete=key] [--region=region] [key=value]
+  fs-env [-hv] [--stack=stack] [--delete=key] [--region=region] [key=value]
 
 Flags:
 	-h, --help    			Print this help message
-	-a, --application		Application name
+	-s, --stack			Stack name
 	-d, --delete  			Delete a key
 	-r, --region  			The AWS region the table is in
 	-v, --version 			Print the version number
@@ -41,7 +41,7 @@ var (
 	f = flag.NewFlagSet("flags", flag.ContinueOnError)
 
 	// options
-	applicationFlag = f.StringP("app", "a", "", "Application name")
+	stackFlag 			= f.StringP("stack", "s", "", "Stack name")
 	deleteFlag      = f.StringP("delete", "d", "", "Delete a key")
 	helpFlag        = f.BoolP("help", "h", false, "Show help")
 	regionFlag      = f.StringP("region", "r", "us-east-1", "The AWS region")
@@ -69,7 +69,7 @@ func main() {
 		os.Exit(exitCodeOk)
 	}
 
-	if *applicationFlag == "" {
+	if *stackFlag == "" {
 		fmt.Printf("Error: Missing application name\n")
 		fmt.Print(helpString)
 		os.Exit(exitCodeError)
@@ -86,7 +86,7 @@ func main() {
 	args := f.Args()
 	params := &dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"name": {S: aws.String(*applicationFlag)},
+			"name": {S: aws.String(*stackFlag)},
 		},
 		TableName: aws.String(tableName),
 		AttributesToGet: []*string{
@@ -96,7 +96,7 @@ func main() {
 	resp, err := svc.GetItem(params)
 	if err != nil {
 		fmt.Print(err.Error())
-		fmt.Printf("\nError getting environment variables for %s", *applicationFlag)
+		fmt.Printf("\nError getting environment variables for %s", *stackFlag)
 		os.Exit(exitCodeError)
 	}
 
@@ -141,7 +141,7 @@ func main() {
 	paramsInput := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
 			"name": {
-				S: aws.String(*applicationFlag),
+				S: aws.String(*stackFlag),
 			},
 			"envs": av,
 		},
