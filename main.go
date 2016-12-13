@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/kms"
 	flag "github.com/ogier/pflag"
 )
 
@@ -29,9 +31,10 @@ const helpString = `Usage:
 
 Flags:
 	-h, --help    			Print this help message
-	-s, --stack			Stack name
+	-s, --stack  			Stack name
 	-d, --delete  			Delete a key
 	-r, --region  			The AWS region the table is in
+	-e, --encyrpt  			Encrypt the config value with KMS
 	-v, --version 			Print the version number
 `
 
@@ -41,11 +44,12 @@ var (
 	f = flag.NewFlagSet("flags", flag.ContinueOnError)
 
 	// options
-	stackFlag 			= f.StringP("stack", "s", "", "Stack name")
-	deleteFlag      = f.StringP("delete", "d", "", "Delete a key")
-	helpFlag        = f.BoolP("help", "h", false, "Show help")
-	regionFlag      = f.StringP("region", "r", "us-east-1", "The AWS region")
-	versionFlag     = f.BoolP("version", "v", false, "Print the version")
+	stackFlag   = f.StringP("stack", "s", "", "Stack name")
+	deleteFlag  = f.StringP("delete", "d", "", "Delete a key")
+	helpFlag    = f.BoolP("help", "h", false, "Show help")
+	regionFlag  = f.StringP("region", "r", "us-east-1", "The AWS region")
+	encryptFlag = f.BoolP("encrypt", "e", false, "Encrypt the config value with KMS")
+	versionFlag = f.BoolP("version", "v", false, "Print the version")
 )
 
 var envs map[string]map[string]string
@@ -82,6 +86,7 @@ func main() {
 		os.Exit(exitCodeError)
 	}
 	svc := dynamodb.New(sess)
+	ksmSvc := kms.New(sess)
 
 	args := f.Args()
 	params := &dynamodb.GetItemInput{
@@ -129,11 +134,29 @@ func main() {
 			fmt.Printf("Error: \"%s\" is not a valid key-value pair\n", pair)
 			os.Exit(exitCodeError)
 		}
-		if _, ok := envs[parts[0]]; ok {
-			fmt.Printf("- %s=%s\n", parts[0], envs[parts[0]]["Value"])
+		k := parts[0]
+		v := parts[1]
+		// Encyrpt with KMS
+		if *encryptFlag == true {
+			params := &kms.EncryptInput{
+				KeyId:     aws.String("alias/ApplicationData"),
+				Plaintext: []byte("PAYLOAD"),
+			}
+			resp, err := ksmSvc.Encrypt(params)
+			if err != nil {
+				fmt.Println(err.Error())
+				os.Exit(exitCodeError)
+			}
+			v = base64.StdEncoding.EncodeToString(resp.CiphertextBlob)
+			if strings.HasSuffix(k, "_KMS") == false {
+				k = strings.Join([]string{k, "KMS"}, "_")
+			}
 		}
-		envs[parts[0]] = map[string]string{"Value": parts[1]}
-		fmt.Printf("+ %s=%s\n", parts[0], parts[1])
+		if _, ok := envs[k]; ok {
+			fmt.Printf("- %s=%s\n", k, envs[k]["Value"])
+		}
+		envs[k] = map[string]string{"Value": v}
+		fmt.Printf("+ %s=%s\n", k, v)
 	}
 
 	// update
