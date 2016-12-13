@@ -86,7 +86,7 @@ func main() {
 		os.Exit(exitCodeError)
 	}
 	svc := dynamodb.New(sess)
-	ksmSvc := kms.New(sess)
+	kmsSvc := kms.New(sess)
 
 	args := f.Args()
 	params := &dynamodb.GetItemInput{
@@ -142,7 +142,7 @@ func main() {
 				KeyId:     aws.String("alias/ApplicationData"),
 				Plaintext: []byte("PAYLOAD"),
 			}
-			resp, err := ksmSvc.Encrypt(params)
+			resp, err := kmsSvc.Encrypt(params)
 			if err != nil {
 				fmt.Println(err.Error())
 				os.Exit(exitCodeError)
