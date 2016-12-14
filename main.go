@@ -105,8 +105,10 @@ func main() {
 		os.Exit(exitCodeError)
 	}
 
-	for k, v := range resp.Item["envs"].M {
-		envs[k] = map[string]string{"Value": *v.M["Value"].S}
+	if len(resp.Item) > 0 {
+		for k, v := range resp.Item["envs"].M {
+			envs[k] = map[string]string{"Value": *v.M["Value"].S}
+		}
 	}
 
 	if (len(args) == 0) && (*deleteFlag == "") {
