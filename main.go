@@ -155,6 +155,10 @@ func main() {
 			}
 		}
 		if _, ok := envs[k]; ok {
+			if envs[k]["Value"] == v {
+				fmt.Printf("  %s=%s\n", k, envs[k]["Value"])
+				os.Exit(exitCodeOk)
+			}
 			fmt.Printf("- %s=%s\n", k, envs[k]["Value"])
 		}
 		envs[k] = map[string]string{"Value": v}
