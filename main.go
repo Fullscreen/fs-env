@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -112,7 +113,14 @@ func main() {
 	}
 
 	if (len(args) == 0) && (*deleteFlag == "") {
+		// Sort keys
+		keys := make([]string, 0, len(envs))
 		for k := range envs {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
 			fmt.Printf("%s=%s\n", k, envs[k]["Value"])
 		}
 		os.Exit(exitCodeOk)
