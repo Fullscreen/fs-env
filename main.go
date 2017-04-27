@@ -150,7 +150,7 @@ func main() {
 		if *encryptFlag == true {
 			params := &kms.EncryptInput{
 				KeyId:     aws.String("alias/ApplicationData"),
-				Plaintext: []byte("PAYLOAD"),
+				Plaintext: []byte(v),
 			}
 			resp, err := kmsSvc.Encrypt(params)
 			if err != nil {
